@@ -364,15 +364,12 @@ st.caption("Score a draft **before** it goes out — same content scoring + bran
            "The most important catch: a named or shown competitor, while it can still be pulled.")
 
 with st.sidebar:
-    st.subheader("API keys")
-    st.caption("Same keys as the daily pipeline. Set as env vars to skip this.")
-    st.session_state["GEMINI_API_KEY"] = st.text_input(
-        "GEMINI_API_KEY", value=_gemini_key(), type="password")
-    st.session_state["GROQ_API_KEY"] = st.text_input(
-        "GROQ_API_KEY", value=_groq_key(), type="password")
-    st.divider()
+    st.subheader("How it works")
     st.caption("Reel + Carousel use Gemini 2.5 Pro (watches the actual media). "
                "Script stage uses Groq (text only — for checking an idea before you shoot).")
+    if not _gemini_key() and not _groq_key():
+        st.warning("No API keys configured. Set GEMINI_API_KEY / GROQ_API_KEY "
+                   "in the app's Secrets (or as env vars locally).")
 
 mode = st.radio("What are you checking?",
                 ["🎬 Reel (video)", "🖼️ Carousel (images)", "✍️ Script / idea (text only)"],
@@ -447,7 +444,7 @@ if mode.startswith("🎬"):
     video   = st.file_uploader("Draft reel (.mp4 / .mov)", type=["mp4", "mov", "m4v"])
     if st.button("Score this reel", type="primary", disabled=not video):
         if not _gemini_key():
-            st.error("Set GEMINI_API_KEY in the sidebar or as an env var.")
+            st.error("Set GEMINI_API_KEY in the app's Secrets (or as an env var).")
         else:
             try:
                 with st.spinner("Uploading + watching the reel (60–120s)…"):
@@ -471,7 +468,7 @@ elif mode.startswith("🖼️"):
                                accept_multiple_files=True)
     if st.button("Score this carousel", type="primary", disabled=not images):
         if not _gemini_key():
-            st.error("Set GEMINI_API_KEY in the sidebar or as an env var.")
+            st.error("Set GEMINI_API_KEY in the app's Secrets (or as an env var).")
         else:
             try:
                 with st.spinner("Reading the slides…"):
@@ -499,7 +496,7 @@ else:
                            placeholder="The caption or the rest of the script…")
     if st.button("Score this idea", type="primary", disabled=not (hook or caption)):
         if not _groq_key():
-            st.error("Set GROQ_API_KEY in the sidebar or as an env var.")
+            st.error("Set GROQ_API_KEY in the app's Secrets (or as an env var).")
         else:
             try:
                 with st.spinner("Scoring the idea…"):
