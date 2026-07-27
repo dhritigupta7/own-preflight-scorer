@@ -223,6 +223,8 @@ WHAT MAKES OWN'S TOP REELS WORK:
 - EMOTION: TRUST ("this is different") or COMMUNITY PRIDE ("I helped build this").
 - PRODUCT SPECIFICITY: Show actual label, actual test results, actual ingredient quantities. Vague claims destroy this brand's USP.
 - TEXT OVERLAYS: Key facts (4 ingredients, 7 tests, 84% voted) must appear as on-screen text — 40%+ watch on mute.
+- SUBTITLES: Since you are watching the actual video, audit the subtitles/captions directly — are they present, accurate to the audio, readable (size, contrast, not covered by the IG UI at the bottom), and in sync? Flag typos, mistimed lines, and any moment where spoken proof has no matching on-screen text.
+- VISUAL EXECUTION: Judge what's on screen — framing, lighting, colour, cut rhythm, b-roll relevance, whether the label/test-report close-ups are actually legible on a phone. Cite timestamps for every visual issue.
 - TRANSPARENCY FORMAT: Hold OWN's own label against the CATEGORY NORM in generic terms ("most protein powders pack in 20+ ingredients") — never name, tag, show, or single out a specific rival.
 - SHAREABILITY: Must have a "tag your gym buddy" / "save this before buying supplements" moment.
 - CTA: "Order link in bio" with urgency outperforms "follow me for more". Community moments drive shares.
@@ -244,6 +246,8 @@ Respond ONLY with valid JSON — no markdown:
   "retention": {{"score": <1-10>, "drop_off_risk": "...", "fix": "..."}},
   "pacing": {{"rating": "<too fast | good | too slow>", "note": "..."}},
   "text_overlays": {{"rating": "<effective | missing | overwhelming | none>", "missing_facts": "ONE string", "fix": "ONE string"}},
+  "subtitles": {{"score": <1-10>, "rating": "<good | hard_to_read | out_of_sync | typos | missing>", "issues": "specific problems with timestamps, or 'clean' if none", "fix": "exact fix"}},
+  "visual_quality": {{"score": <1-10>, "issues": "framing/lighting/colour/cut/legibility problems with timestamps, or 'clean' if none", "fix": "exact fix"}},
   "emotion_trigger": {{"score": <1-10>, "type": "<betrayal | urgency | shock | curiosity | none>", "note": "..."}},
   "shareability": {{"score": <1-10>, "whatsapp_moment": "...", "fix": "..."}},
   "brand_proof_points": {{"score": <1-10>, "proof_shown": ["..."], "missed_opportunities": "..."}},
@@ -269,6 +273,7 @@ WHAT MAKES OWN'S TOP CAROUSELS WORK:
 - STRUCTURE: Trust trigger → Specific proof (show, don't claim) → Community moment or conversion. Every slide must earn its swipe.
 - PROOF SLIDES: Show actual label, test results, ingredient quantities. Generic claims destroy OWN's USP.
 - TEXT: Key facts (4 ingredients, 7 tests, 84% voted) must appear as on-slide text.
+- DESIGN EXECUTION: Since you are seeing the actual slides, audit them visually — text legibility on a phone (size, contrast, safe margins), visual hierarchy (one idea per slide), consistency of fonts/colours across slides, typos, and whether label/test-report shots are actually readable. Cite the slide number for every issue.
 - LAST SLIDE CTA: "Order link in bio" with community framing far outperforms generic CTAs.
 - SWIPEABILITY: Each slide must give a reason to swipe. If slide 2 can't beat slide 1 for curiosity, it's dead weight.
 - CAPTION: Should deepen the trust argument, not repeat the slides.
@@ -288,6 +293,7 @@ Respond ONLY with valid JSON — no markdown:
   "hook_slide": {{"score": <1-10>, "what_it_shows": "...", "verdict": "...", "exact_fix": "if score<8, exact replacement hook slide"}},
   "swipeability": {{"score": <1-10>, "weakest_slide": "...", "fix": "..."}},
   "proof_shown": {{"score": <1-10>, "what_was_shown": ["..."], "missed_opportunities": "..."}},
+  "design_quality": {{"score": <1-10>, "issues": "legibility/hierarchy/consistency/typo problems with slide numbers, or 'clean' if none", "fix": "exact fix"}},
   "caption_quality": {{"score": <1-10>, "verdict": "...", "fix": "exact improved opening 2 sentences"}},
   "cta": {{"present": <bool>, "what_was_said": "...", "better_cta": "..."}},
   "brand_alignment": {{"score": <1-10>, "on_brand": ["..."], "off_brand": ["..."], "co_creation_present": <bool>, "tone_verdict": "..."}},
@@ -416,7 +422,7 @@ def _render(result: dict):
     for k, v in result.items():
         if isinstance(v, dict) and "score" in v:
             line = f"**{k.replace('_', ' ').title()}** — {v.get('score','—')}/10"
-            for fk in ("verdict", "note", "exact_fix", "fix", "tone_verdict", "better_cta"):
+            for fk in ("rating", "verdict", "note", "issues", "exact_fix", "fix", "tone_verdict", "better_cta"):
                 if v.get(fk):
                     line += f"\n  - *{fk.replace('_',' ')}:* {v[fk]}"
             rows.append(line)
