@@ -2,3 +2,5 @@
 .streamlit/secrets.toml
 __pycache__/
 *.pyc
+# per-deployment score history
+history.json

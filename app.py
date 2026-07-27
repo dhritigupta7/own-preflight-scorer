@@ -375,6 +375,43 @@ def compute_verdict(result: dict) -> tuple:
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
+# HISTORY — every scored draft is saved so past verdicts can be reopened.
+# Stored as a JSON file next to the app. On Streamlit Cloud this survives
+# reruns and sessions but is wiped on redeploy/restart (ephemeral disk).
+# ═══════════════════════════════════════════════════════════════════════════════
+
+HISTORY_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "history.json")
+
+
+def _load_history() -> list:
+    try:
+        with open(HISTORY_FILE, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except Exception:
+        return []
+
+
+def _save_run(mode_label: str, title: str, result: dict):
+    emoji, label, _ = compute_verdict(result)
+    entry = {
+        "ts":            time.strftime("%Y-%m-%d %H:%M"),
+        "mode":          mode_label,
+        "title":         (title or "untitled").strip().replace("\n", " ")[:60],
+        "verdict_emoji": emoji,
+        "verdict":       label,
+        "score":         result.get("overall_score"),
+        "result":        result,
+    }
+    hist = _load_history()
+    hist.append(entry)
+    try:
+        with open(HISTORY_FILE, "w", encoding="utf-8") as f:
+            json.dump(hist[-200:], f, ensure_ascii=False)
+    except Exception:
+        pass
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
 # UI
 # ═══════════════════════════════════════════════════════════════════════════════
 
@@ -391,6 +428,17 @@ with st.sidebar:
     if not _gemini_key() and not _groq_key():
         st.warning("No API keys configured. Set GEMINI_API_KEY / GROQ_API_KEY "
                    "in the app's Secrets (or as env vars locally).")
+
+    st.divider()
+    st.subheader("📜 History")
+    _hist = _load_history()
+    if not _hist:
+        st.caption("No past scores yet — every scored draft will show up here.")
+    else:
+        for _i, _h in enumerate(reversed(_hist[-25:])):
+            if st.button(f"{_h['verdict_emoji']} {_h.get('score','—')}/10 · {_h['ts']} · {_h['mode']} — {_h['title']}",
+                         key=f"hist_{_i}", use_container_width=True):
+                st.session_state["viewing_history"] = _h
 
 mode = st.radio("What are you checking?",
                 ["🎬 Reel (video)", "🖼️ Carousel (images)", "✍️ Script / idea (text only)"],
@@ -458,6 +506,17 @@ def log(msg: str):
     log_box.code("\n".join(_logs[-12:]))
 
 
+# ── Viewing a past score? Show it instead of the scoring form ──
+_viewing = st.session_state.get("viewing_history")
+if _viewing:
+    st.info(f"📜 Past score — {_viewing['mode']} · **{_viewing['title']}** · {_viewing['ts']}")
+    if st.button("← Back to scoring"):
+        st.session_state.pop("viewing_history", None)
+        st.rerun()
+    _render(_viewing.get("result") or {})
+    st.stop()
+
+
 # ── REEL ──
 if mode.startswith("🎬"):
     caption = st.text_area("Caption (as it will be posted)", height=120,
@@ -477,6 +536,7 @@ if mode.startswith("🎬"):
                          {"file_data": {"mime_type": "video/mp4", "file_uri": file_uri}}],
                         log)
                 log_box.empty()
+                _save_run("🎬 Reel", video.name, result)
                 _render(result)
             except Exception as e:
                 st.error(f"Scoring failed: {e}")
@@ -504,6 +564,7 @@ elif mode.startswith("🖼️"):
                     log("🤖 Scoring with Gemini 2.5 Pro…")
                     result = _call_gemini(parts, log)
                 log_box.empty()
+                _save_run("🖼️ Carousel", caption or f"{len(images)} slides", result)
                 _render(result)
             except Exception as e:
                 st.error(f"Scoring failed: {e}")
@@ -524,6 +585,7 @@ else:
                     log("🤖 Scoring with Groq…")
                     result = _call_groq(script_prompt(hook, caption, fmt), log)
                 log_box.empty()
+                _save_run("✍️ Script", hook or caption, result)
                 _render(result)
             except Exception as e:
                 st.error(f"Scoring failed: {e}")
