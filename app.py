@@ -73,6 +73,13 @@ BRAND_SAFETY_RULE = """NON-NEGOTIABLE BRAND-SAFETY RULE (this overrides everythi
 - Every hook, fix, actionable, and verdict MUST stay brand-agnostic: compare against "most protein powders", "the category", "what you've been sold" — NEVER "Brand X" or a recognisable rival. Do NOT recommend a side-by-side comparison against a named competitor.
 - This is un-undoable once published. Scan the ACTUAL draft (every frame/slide/overlay/spoken line AND the caption). If ANYTHING names, tags, shows, or visually features a specific rival brand's product/label/packaging, flag it as a blocker."""
 
+EDUCATE_DONT_SELL_RULE = """EDUCATE, DON'T SELL (core content philosophy — second only to brand safety):
+- Every piece of content must teach the viewer something they can use even if they never buy OWN — how to read a label, what an ingredient actually does, what a test result means, how the category misleads them.
+- Hard-selling language is OFF-BRAND and must be flagged wherever it appears (spoken, on-screen, or in the caption): "order now", "link in bio", "grab yours", "before it sells out", discount codes, price-led urgency. The moment content reads as an ad, the trust that makes this account work is gone.
+- The product may appear as EVIDENCE — its label, its test report, its ingredient list held up against the category norm — never as a pitch.
+- The right CTA is educational or community-driven: "save this before your next supermarket run", "check your protein's label tonight", "tag someone who still trusts the front of the pack". NEVER recommend "order link in bio" or any purchase-push CTA as a fix.
+- If the draft contains selling language, list every instance with its exact location and give the educational replacement."""
+
 # Shared JSON tail asking for the brand-safety verdict on the DRAFT itself.
 BRAND_SAFETY_FIELD = """  "brand_safety": {
     "violation": <true if the draft names/tags/shows a specific rival brand, else false>,
@@ -219,7 +226,7 @@ def reel_prompt(caption: str) -> str:
 
 WHAT MAKES OWN'S TOP REELS WORK:
 - HOOK (first 2 seconds): A transparency claim or specific proof stat that triggers "finally, someone honest." e.g. "This whey has 4 ingredients. Most have 20+."
-- STRUCTURE: Trust trigger → Specific proof (show, don't claim) → Community moment or conversion. Zero fluff.
+- STRUCTURE: Trust trigger → Specific proof (show, don't claim) → a takeaway the viewer can use → community moment. Zero fluff.
 - EMOTION: TRUST ("this is different") or COMMUNITY PRIDE ("I helped build this").
 - PRODUCT SPECIFICITY: Show actual label, actual test results, actual ingredient quantities. Vague claims destroy this brand's USP.
 - TEXT OVERLAYS: Key facts (4 ingredients, 7 tests, 84% voted) must appear as on-screen text — 40%+ watch on mute.
@@ -227,13 +234,15 @@ WHAT MAKES OWN'S TOP REELS WORK:
 - VISUAL EXECUTION: Judge what's on screen — framing, lighting, colour, cut rhythm, b-roll relevance, whether the label/test-report close-ups are actually legible on a phone. Cite timestamps for every visual issue.
 - TRANSPARENCY FORMAT: Hold OWN's own label against the CATEGORY NORM in generic terms ("most protein powders pack in 20+ ingredients") — never name, tag, show, or single out a specific rival.
 - SHAREABILITY: Must have a "tag your gym buddy" / "save this before buying supplements" moment.
-- CTA: "Order link in bio" with urgency outperforms "follow me for more". Community moments drive shares.
+- CTA: Educational or community CTAs ("save this", "check your label tonight", "tag someone who needs this") — never a purchase push.
 
-WHAT KILLS PERFORMANCE: hook that takes >3s to land; leading with product features over emotional trust; no on-screen text for key facts; content that feels promotional rather than transparent; no conversion moment; weak/generic CTA.
+WHAT KILLS PERFORMANCE: hook that takes >3s to land; leading with product features over emotional trust; no on-screen text for key facts; content that feels promotional rather than educational; no clear takeaway the viewer can act on; weak/generic CTA.
 
 DO NOT PENALISE (intentional formats): long walk-throughs of OWN's own label/quantities/test reports; repeated on-screen proof numbers; slow reveal of lab results — these build trust by design.
 
 {BRAND_SAFETY_RULE}
+
+{EDUCATE_DONT_SELL_RULE}
 
 {_DRAFT_CONTEXT}
 - Caption: "{caption[:400]}"
@@ -252,8 +261,8 @@ Respond ONLY with valid JSON — no markdown:
   "shareability": {{"score": <1-10>, "whatsapp_moment": "...", "fix": "..."}},
   "brand_proof_points": {{"score": <1-10>, "proof_shown": ["..."], "missed_opportunities": "..."}},
   "brand_alignment": {{"score": <1-10>, "on_brand": ["..."], "off_brand": ["..."], "co_creation_present": <bool>, "tone_verdict": "..."}},
-  "conversion_intent": {{"score": <1-10>, "purchase_trigger": "...", "fix": "..."}},
-  "cta": {{"present": <bool>, "what_was_said": "...", "better_cta": "..."}},
+  "educate_dont_sell": {{"score": <1-10 where 10 = pure education>, "viewer_takeaway": "what the viewer learns even if they never buy", "selling_language_found": ["every selling phrase with its exact location, empty if none"], "fix": "educational replacement for each selling phrase"}},
+  "cta": {{"present": <bool>, "what_was_said": "...", "better_cta": "an educational/community CTA — never a purchase push"}},
 {BRAND_SAFETY_FIELD}
   "overall_score": <1-10>,
   "predicted_performance": "Which view band is this likely to land in (e.g. 'likely under 500k — weak' / 'could clear 3M if the hook is fixed') and the single biggest lever to move it up",
@@ -270,17 +279,19 @@ def carousel_prompt(caption: str, n_slides: int) -> str:
 
 WHAT MAKES OWN'S TOP CAROUSELS WORK:
 - HOOK SLIDE (slide 1): A transparency claim or proof stat that stops the scroll. "We have 4 ingredients. Most wheys have 20+." — bold, specific, verifiable.
-- STRUCTURE: Trust trigger → Specific proof (show, don't claim) → Community moment or conversion. Every slide must earn its swipe.
+- STRUCTURE: Trust trigger → Specific proof (show, don't claim) → a takeaway the viewer can use → community moment. Every slide must earn its swipe.
 - PROOF SLIDES: Show actual label, test results, ingredient quantities. Generic claims destroy OWN's USP.
 - TEXT: Key facts (4 ingredients, 7 tests, 84% voted) must appear as on-slide text.
 - DESIGN EXECUTION: Since you are seeing the actual slides, audit them visually — text legibility on a phone (size, contrast, safe margins), visual hierarchy (one idea per slide), consistency of fonts/colours across slides, typos, and whether label/test-report shots are actually readable. Cite the slide number for every issue.
-- LAST SLIDE CTA: "Order link in bio" with community framing far outperforms generic CTAs.
+- LAST SLIDE CTA: Educational or community CTAs ("save this for your next supermarket run", "tag someone who needs this") — never a purchase push.
 - SWIPEABILITY: Each slide must give a reason to swipe. If slide 2 can't beat slide 1 for curiosity, it's dead weight.
 - CAPTION: Should deepen the trust argument, not repeat the slides.
 
-WHAT KILLS PERFORMANCE: hook slide with no "I need to see the rest" pull; slides that feel like a brochure; caption with no proof/community angle; missing the co-creation angle; generic fitness content.
+WHAT KILLS PERFORMANCE: hook slide with no "I need to see the rest" pull; slides that feel like a brochure or an ad; caption with no proof/community angle; missing the co-creation angle; generic fitness content; no takeaway the viewer can act on.
 
 {BRAND_SAFETY_RULE}
+
+{EDUCATE_DONT_SELL_RULE}
 
 {_DRAFT_CONTEXT}
 - Slides provided: {n_slides}
@@ -294,8 +305,9 @@ Respond ONLY with valid JSON — no markdown:
   "swipeability": {{"score": <1-10>, "weakest_slide": "...", "fix": "..."}},
   "proof_shown": {{"score": <1-10>, "what_was_shown": ["..."], "missed_opportunities": "..."}},
   "design_quality": {{"score": <1-10>, "issues": "legibility/hierarchy/consistency/typo problems with slide numbers, or 'clean' if none", "fix": "exact fix"}},
+  "educate_dont_sell": {{"score": <1-10 where 10 = pure education>, "viewer_takeaway": "what the viewer learns even if they never buy", "selling_language_found": ["every selling phrase with its slide/caption location, empty if none"], "fix": "educational replacement for each selling phrase"}},
   "caption_quality": {{"score": <1-10>, "verdict": "...", "fix": "exact improved opening 2 sentences"}},
-  "cta": {{"present": <bool>, "what_was_said": "...", "better_cta": "..."}},
+  "cta": {{"present": <bool>, "what_was_said": "...", "better_cta": "an educational/community CTA — never a purchase push"}},
   "brand_alignment": {{"score": <1-10>, "on_brand": ["..."], "off_brand": ["..."], "co_creation_present": <bool>, "tone_verdict": "..."}},
 {BRAND_SAFETY_FIELD}
   "overall_score": <1-10>,
@@ -311,9 +323,11 @@ def script_prompt(hook: str, caption: str, fmt: str) -> str:
 
 {BRAND_BRIEF}
 
-WHAT WORKS FOR OWN: a hook that lands a transparency claim or proof stat in the first line; specific proof over vague claims (4 ingredients, 7 tests, 84% voted); a trust or community emotion; a clear conversion/share moment; the category-norm comparison kept generic.
+WHAT WORKS FOR OWN: a hook that lands a transparency claim or proof stat in the first line; specific proof over vague claims (4 ingredients, 7 tests, 84% voted); a trust or community emotion; a takeaway the viewer can use even if they never buy; a save/share moment; the category-norm comparison kept generic.
 
 {BRAND_SAFETY_RULE}
+
+{EDUCATE_DONT_SELL_RULE}
 
 {_DRAFT_CONTEXT}
 - Format: {fmt}
@@ -326,6 +340,7 @@ Respond ONLY with valid JSON — no markdown:
   "idea_strength": {{"score": <1-10>, "verdict": "Is the underlying idea worth producing for this brand?", "note": "..."}},
   "proof_specificity": {{"score": <1-10>, "note": "Is it grounded in showable proof, or vague claims?", "fix": "..."}},
   "emotion_trigger": {{"score": <1-10>, "type": "<betrayal | urgency | shock | curiosity | community | none>", "note": "..."}},
+  "educate_dont_sell": {{"score": <1-10 where 10 = pure education>, "viewer_takeaway": "what the viewer learns even if they never buy", "selling_language_found": ["every selling phrase in the hook/caption, empty if none"], "fix": "educational replacement for each selling phrase"}},
   "caption_quality": {{"score": <1-10>, "verdict": "...", "fix": "exact improved opening 2 sentences"}},
   "brand_alignment": {{"score": <1-10>, "on_brand": ["..."], "off_brand": ["..."], "tone_verdict": "..."}},
 {BRAND_SAFETY_FIELD}
