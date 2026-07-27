@@ -376,19 +376,70 @@ def compute_verdict(result: dict) -> tuple:
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # HISTORY — every scored draft is saved so past verdicts can be reopened.
-# Stored as a JSON file next to the app. On Streamlit Cloud this survives
-# reruns and sessions but is wiped on redeploy/restart (ephemeral disk).
+# Durable store: a secret GitHub Gist (set GH_GIST_TOKEN + GH_GIST_ID in the
+# app's Secrets — token needs only the `gist` scope). Without those it falls
+# back to a local JSON file, which on Streamlit Cloud is wiped on redeploy.
 # ═══════════════════════════════════════════════════════════════════════════════
 
 HISTORY_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "history.json")
+GIST_API     = "https://api.github.com/gists"
+
+
+def _gist_conf() -> tuple:
+    return _secret("GH_GIST_TOKEN"), _secret("GH_GIST_ID")
+
+
+@st.cache_data(ttl=60, show_spinner=False)
+def _load_history_gist(gist_id: str) -> list:
+    try:
+        r = requests.get(
+            f"{GIST_API}/{gist_id}",
+            headers={"Authorization": f"Bearer {_gist_conf()[0]}",
+                     "Accept": "application/vnd.github+json"},
+            timeout=15,
+        )
+        r.raise_for_status()
+        f = (r.json().get("files") or {}).get("history.json") or {}
+        content = f.get("content", "[]")
+        if f.get("truncated") and f.get("raw_url"):
+            content = requests.get(f["raw_url"], timeout=15).text
+        return json.loads(content or "[]")
+    except Exception:
+        return []
 
 
 def _load_history() -> list:
+    token, gist_id = _gist_conf()
+    if token and gist_id:
+        return _load_history_gist(gist_id)
     try:
         with open(HISTORY_FILE, "r", encoding="utf-8") as f:
             return json.load(f)
     except Exception:
         return []
+
+
+def _save_history(hist: list):
+    token, gist_id = _gist_conf()
+    payload = json.dumps(hist[-100:], ensure_ascii=False)
+    if token and gist_id:
+        try:
+            requests.patch(
+                f"{GIST_API}/{gist_id}",
+                headers={"Authorization": f"Bearer {token}",
+                         "Accept": "application/vnd.github+json"},
+                json={"files": {"history.json": {"content": payload}}},
+                timeout=20,
+            )
+            _load_history_gist.clear()
+        except Exception:
+            pass
+        return
+    try:
+        with open(HISTORY_FILE, "w", encoding="utf-8") as f:
+            f.write(payload)
+    except Exception:
+        pass
 
 
 def _save_run(mode_label: str, title: str, result: dict):
@@ -404,11 +455,7 @@ def _save_run(mode_label: str, title: str, result: dict):
     }
     hist = _load_history()
     hist.append(entry)
-    try:
-        with open(HISTORY_FILE, "w", encoding="utf-8") as f:
-            json.dump(hist[-200:], f, ensure_ascii=False)
-    except Exception:
-        pass
+    _save_history(hist)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -431,6 +478,9 @@ with st.sidebar:
 
     st.divider()
     st.subheader("📜 History")
+    if not all(_gist_conf()):
+        st.caption("⚠️ Not durable yet — set GH_GIST_TOKEN and GH_GIST_ID in Secrets "
+                   "so history survives app restarts.")
     _hist = _load_history()
     if not _hist:
         st.caption("No past scores yet — every scored draft will show up here.")
